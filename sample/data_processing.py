@@ -4,6 +4,7 @@ import os
 import PIL.Image
 import numpy as np
 import pickle
+from viz import plot_seg_label_distributions
 
 __author__ = "Ronny Restrepo"
 __copyright__ = "Copyright 2017, Ronny Restrepo"
@@ -12,6 +13,188 @@ __license__ = "Apache License"
 __version__ = "2.0"
 
 
+#calculate_class_weights
+#BDD100K
+label_colormap = {
+    "unlabeled"         :(  0,  0,  0),
+    "dynamic"           :(111, 74,  0),
+    "ego vehicle"       :(  0,  0,  0),
+    "ground"            :( 81,  0, 81),
+    "static"            :(  0,  0,  0),
+    "parking"           :(250,170,160),
+    "rail track"        :(230,150,140),
+    "road"              :(128, 64,128),
+    "sidewalk"          :(244, 35,232),
+    "bridge"            :(150,100,100),
+    "building"          :( 70, 70, 70),
+    "fence"             :(190,153,153),
+    "garage"            :(180,100,180),
+    "guard rail"        :(180,165,180),
+    "tunnel"            :(150,120, 90),
+    "wall"              :(102,102,156),
+    "banner"            :(250,170,100),
+    "billboard"         :(220,220,250),
+    "lane divider"      :(255, 165, 0),
+    "parking sign"      :(220, 20, 60),
+    "pole"              :(153,153,153),
+    "polegroup"         :(153,153,153),
+    "street light"      :(220,220,100),
+    "traffic cone"      :(255, 70,  0),
+    "traffic device"    :(220,220,220),
+    "traffic light"     :(250,170, 30),
+    "traffic sign"      :(220,220,  0),
+    "traffic sign frame":(250,170,250),
+    "terrain"           :(152,251,152),
+    "vegetation"        :(107,142, 35),
+    "sky"               :( 70,130,180),
+    "person"            :(220, 20, 60),
+    "rider"             :(255,  0,  0),
+    "bicycle"           :(119, 11, 32),
+    "bus"               :(  0, 60,100),
+    "car"               :(  0,  0,142),
+    "caravan"           :(  0,  0, 90),
+    "motorcycle"        :(  0,  0,230),
+    "trailer"           :(  0,  0,110),
+    "train"             :(  0, 80,100),
+    "truck"             :(  0,  0, 70),
+}
+id2label = [
+    'unlabeled'         ,
+    'dynamic'           ,
+    'ego vehicle'       ,
+    'ground'            ,
+    'static'            ,
+    'parking'           ,
+    'rail track'        ,
+    'road'              ,
+    'sidewalk'          ,
+    'bridge'            ,
+    'building'          ,
+    'fence'             ,
+    'garage'            ,
+    'guard rail'        ,
+    'tunnel'            ,
+    'wall'              ,
+    'banner'            ,
+    'billboard'         ,
+    'lane divider'      ,
+    'parking sign'      ,
+    'pole'              ,
+    'polegroup'         ,
+    'street light'      ,
+    'traffic cone'      ,
+    'traffic device'    ,
+    'traffic light'     ,
+    'traffic sign'      ,
+    'traffic sign frame',
+    'terrain'           ,
+    'vegetation'        ,
+    'sky'               ,
+    'person'            ,
+    'rider'             ,
+    'bicycle'           ,
+    'bus'               ,
+    'car'               ,
+    'caravan'           ,
+    'motorcycle'        ,
+    'trailer'           ,
+    'train'             ,
+    'truck'             ,
+]
+'''label_colormap = {
+    "Banner":(250,170,100),
+    "Billboard":(220,220,250),
+    "LaneDivider":(255,165,0),
+    "ParkingSign":(220,20,60),
+    "Pole":(153,153,153),
+    "PoleGroup":(153,153,153),
+    "StreetLight":(220,220,100),
+    "TrafficCone":(255,70,0),
+    "TrafficDevice":(220,220,220),
+    "TrafficLight":(250,170,30),
+    "TrafficSign":(220,220,0),
+    "SignFrame":(250,170,250),
+    "Person":(220,20,60),
+    "Rider":(255,0,0),
+    "Bicycle":(119,11,32),
+    "Bus":(0,60,100),
+    "Car":(0,0,142),
+    "Caravan":(0,0,90),
+    "Motorcycle":(0,0,230),
+    "Trailer":(0,0,110),
+    "Train":(0,80,100),
+    "Truck":(0,0,70),
+}
+
+id2label = [
+    'Banner',
+    'Billboard',
+    'LaneDivider',
+    'ParkingSign',
+    'Pole',
+    'PoleGroup',
+    'StreetLight',
+    'TrafficCone',
+    'TrafficDevice',
+    'TrafficLight',
+    'TrafficSign',
+    'SignFrame',
+    'Person',
+    'Rider',
+    'Bicycle',
+    'Bus',
+    'Car',
+    'Caravan',
+    'Motorcycle',
+    'Trailer',
+    'Train',
+    'Truck',
+]'''
+'''labels = [
+    #       name                     id    trainId   category catId      hasInstances   ignoreInEval   color
+    Label(  'unlabeled'            ,  0 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+    Label(  'dynamic'              ,  1 ,      255 , 'void'            , 0       , False        , True         , (111, 74,  0) ),
+    Label(  'ego vehicle'          ,  2 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+    Label(  'ground'               ,  3 ,      255 , 'void'            , 0       , False        , True         , ( 81,  0, 81) ),
+    Label(  'static'               ,  4 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+    Label(  'parking'              ,  5 ,      255 , 'flat'            , 1       , False        , True         , (250,170,160) ),
+    Label(  'rail track'           ,  6 ,      255 , 'flat'            , 1       , False        , True         , (230,150,140) ),
+    Label(  'road'                 ,  7 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
+    Label(  'sidewalk'             ,  8 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
+    Label(  'bridge'               ,  9 ,      255 , 'construction'    , 2       , False        , True         , (150,100,100) ),
+    Label(  'building'             , 10 ,        2 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
+    Label(  'fence'                , 11 ,        4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
+    Label(  'garage'               , 12 ,      255 , 'construction'    , 2       , False        , True         , (180,100,180) ),
+    Label(  'guard rail'           , 13 ,      255 , 'construction'    , 2       , False        , True         , (180,165,180) ),
+    Label(  'tunnel'               , 14 ,      255 , 'construction'    , 2       , False        , True         , (150,120, 90) ),
+    Label(  'wall'                 , 15 ,        3 , 'construction'    , 2       , False        , False        , (102,102,156) ),
+    Label(  'banner'               , 16 ,      255 , 'object'          , 3       , False        , True         , (250,170,100) ),
+    Label(  'billboard'            , 17 ,      255 , 'object'          , 3       , False        , True         , (220,220,250) ),
+    Label(  'lane divider'         , 18 ,      255 , 'object'          , 3       , False        , True         , (255, 165, 0) ),
+    Label(  'parking sign'         , 19 ,      255 , 'object'          , 3       , False        , False        , (220, 20, 60) ),
+    Label(  'pole'                 , 20 ,        5 , 'object'          , 3       , False        , False        , (153,153,153) ),
+    Label(  'polegroup'            , 21 ,      255 , 'object'          , 3       , False        , True         , (153,153,153) ),
+    Label(  'street light'         , 22 ,      255 , 'object'          , 3       , False        , True         , (220,220,100) ),
+    Label(  'traffic cone'         , 23 ,      255 , 'object'          , 3       , False        , True         , (255, 70,  0) ),
+    Label(  'traffic device'       , 24 ,      255 , 'object'          , 3       , False        , True         , (220,220,220) ),
+    Label(  'traffic light'        , 25 ,        6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
+    Label(  'traffic sign'         , 26 ,        7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
+    Label(  'traffic sign frame'   , 27 ,      255 , 'object'          , 3       , False        , True         , (250,170,250) ),
+    Label(  'terrain'              , 28 ,        9 , 'nature'          , 4       , False        , False        , (152,251,152) ),
+    Label(  'vegetation'           , 29 ,        8 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
+    Label(  'sky'                  , 30 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
+    Label(  'person'               , 31 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
+    Label(  'rider'                , 32 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
+    Label(  'bicycle'              , 33 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
+    Label(  'bus'                  , 34 ,       15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
+    Label(  'car'                  , 35 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+    Label(  'caravan'              , 36 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
+    Label(  'motorcycle'           , 37 ,       17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
+    Label(  'trailer'              , 38 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
+    Label(  'train'                , 39 ,       16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
+    Label(  'truck'                , 40 ,       14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
+]
+#camvid
 label_colormap = {
     "Animal": (64, 128, 64),
     "Archway": (192, 0, 128),
@@ -81,14 +264,13 @@ id2label = [
     'Misc_Text',
     'Wall',
     'Building',
-]
+]'''
 
 label2id = {label:id for id, label in enumerate(id2label)}
 idcolormap = [label_colormap[label] for label in id2label]
 
 # Check nothing stupid happened with mappings
 assert set(label_colormap) == set(id2label) == set(label2id.keys()), "Something is wrong with the id label maps"
-
 
 # ==============================================================================
 #                                                                 MAYBE_MAKE_DIR
@@ -183,8 +365,14 @@ def create_file_lists(inputs_dir, labels_dir):
         Returns 2-tuple of two lists: (input_files, label_files)
     """
     # Create (synchronized) lists of full file paths to input and label images
+    '''label_files = glob.glob(os.path.join(labels_dir, "*.png"))
+    file_ids = [os.path.basename(f).replace("_L.png", ".png") for f in label_files]'''
+
     label_files = glob.glob(os.path.join(labels_dir, "*.png"))
-    file_ids = [os.path.basename(f).replace("_L.png", ".png") for f in label_files]
+    #print(label_files)
+    #file_ids = [os.path.basename(f).replace("_L.png", ".png") for f in label_files]
+    file_ids = [os.path.basename(f).replace("_train_color.png", ".jpg") for f in label_files]   
+
     input_files = [os.path.join(inputs_dir, file_id) for file_id in file_ids]
     return input_files, label_files
 
@@ -232,6 +420,12 @@ def rgb2seglabel(img, colormap, channels_axis=False):
         label = np.zeros([height, width,1], dtype=np.uint8)
     else:
         label = np.zeros([height, width], dtype=np.uint8)
+    '''print(label.shape)
+    arr = np.all(img==np.array(idcolormap[16]))
+    print(arr)
+    import matplotlib.pyplot as plt
+    plt.imshow(img)
+    plt.show()'''
     for id in range(len(colormap)):
         label[np.all(img==np.array(idcolormap[id]), axis=2)] = id
     return label
@@ -279,7 +473,7 @@ def load_image_and_seglabels(input_files, label_files, colormap, shape=(32,32), 
         Y = np.zeros([n_samples, height, width, 1], dtype=np.uint8)
     else:
         Y = np.zeros([n_samples, height, width], dtype=np.uint8)
-
+    print(n_samples)
     for i in range(n_samples):
         # Get filenames of input and label
         img_file = input_files[i]
@@ -287,8 +481,17 @@ def load_image_and_seglabels(input_files, label_files, colormap, shape=(32,32), 
 
         # Resize input and label images
         img = PIL.Image.open(img_file).resize(shape, resample=PIL.Image.CUBIC)
-        label_img = PIL.Image.open(label_file).resize(shape, resample=PIL.Image.NEAREST)
+        
+        label_img   = PIL.Image.open(label_file).resize(shape, resample=PIL.Image.NEAREST).convert('RGB')
 
+        '''img = PIL.Image.open(img_file).resize(shape, resample=PIL.Image.CUBIC)
+        
+        label_img   = PIL.Image.open(label_file).resize(shape, resample=PIL.Image.NEAREST).convert('RGB')'''
+        #label_img = img2[:,:,:3]
+
+        '''import matplotlib.pyplot as plt
+        plt.imshow(label_img)
+        plt.show()'''
         # Convert back to numpy arrays
         img = np.asarray(img, dtype=np.uint8)
         label_img = np.asarray(label_img, dtype=np.uint8)
@@ -300,7 +503,7 @@ def load_image_and_seglabels(input_files, label_files, colormap, shape=(32,32), 
         # Add processed images to batch arrays
         X[i] = img
         Y[i] = label_img
-
+        print(int(i/n_samples*100),"%",end='\r')
     return X, Y
 
 
@@ -408,10 +611,15 @@ def calculate_class_weights(Y, n_classes, method="paszke", c=1.02):
 
 if __name__ == '__main__':
     # SETTINGS
-    data_dir = "/path/to/camvid"
-    data_dir = "/home/ronny/TEMP/camvid/"
-    pickle_file = "data_256.pickle"
-    shape = [256, 256]
+    #data_dir = "/path/to/camvid"
+    #data_dir = "/home/ronny/TEMP/camvid/"
+    data_dir = "/home/artyom/Desktop/Altran/Datasets/tamp/"
+    #data_dir = "/home/artyom/Desktop/Altran/Datasets/camvid/"
+    pickle_file = "../pickle_jar/data_HD4.pickle"
+    #pickle_file = "data_256.pickle"
+    #Specify shape
+    shape = [424,240]
+    #shape = [256, 256]
     width, height = shape
     n_channels = 3
     label_chanel_axis=False # Create chanels axis for label images?
@@ -435,12 +643,14 @@ if __name__ == '__main__':
         label_chanel_axis=label_chanel_axis)
 
     # # Visualize the data
-    # from viz import viz_overlayed_segmentation_label
-    # gx = batch2grid(X, 5,5)
-    # gy = batch2grid(Y, 5,5)
-    # g = viz_overlayed_segmentation_label(gx, gy, colormap=idcolormap, alpha=0.7, saveto=None)
-    # g.show()
+    from viz import viz_overlayed_segmentation_label
+    from viz import batch2grid
+    gx = batch2grid(data["X_train"], 5,5)
+    gy = batch2grid(data["Y_train"], 5,5)
+    g = viz_overlayed_segmentation_label(gx, gy, colormap=idcolormap, alpha=0.7, saveto=None)
+    g.show()
 
     print("- Pickling the data to:", pickle_file)
     obj2pickle(data, pickle_file)
     print("- DONE!")
+    #plot_seg_label_distributions(file_data["Y_train"], id2label, idcolormap)

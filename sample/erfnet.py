@@ -113,6 +113,7 @@ def romeranetB_logits(X, Y, n_classes, alpha=0.001, dropout=0.3, l2=None, is_tra
     x = factorized_res_moduleOLD(x, is_training=is_training, dilation=8, name="fres15")
     x = factorized_res_moduleOLD(x, is_training=is_training, dilation=16, name="fres16")
 
+    #Decoder
     x = upsample(x, n_filters=64, is_training=is_training, name="up17")
     x = factorized_res_moduleOLD(x, is_training=is_training, dilation=1, name="fres18")
     x = factorized_res_moduleOLD(x, is_training=is_training, dilation=1, name="fres19")
