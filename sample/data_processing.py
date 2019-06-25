@@ -613,8 +613,8 @@ if __name__ == '__main__':
     # SETTINGS
     #data_dir = "/path/to/camvid"
     #data_dir = "/home/ronny/TEMP/camvid/"
-    data_dir = "/home/artyom/Desktop/Altran/Datasets/tamp/"
-    #data_dir = "/home/artyom/Desktop/Altran/Datasets/camvid/"
+    data_dir = "/home/artyom/Desktop/Datasets/tamp/"
+    #data_dir = "/home/artyom/Desktop/Datasets/camvid/"
     pickle_file = "../pickle_jar/data_HD4.pickle"
     #pickle_file = "data_256.pickle"
     #Specify shape
