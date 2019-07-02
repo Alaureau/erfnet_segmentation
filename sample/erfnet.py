@@ -55,7 +55,7 @@ def factorized_res_module(x, is_training, dropout=0.3, dilation=[1,1], l2=None, 
             y = conv(y, num_outputs=n_filters, kernel_size=[1,3], rate=dilation[0], scope="conv_a_1x3")
             y = conv(y, num_outputs=n_filters, kernel_size=[3,1], rate=dilation[1], normalizer_fn=None, scope="conv_b_3x1")
             y = conv(y, num_outputs=n_filters, kernel_size=[1,3], rate=dilation[1], scope="conv_b_1x3")
-            y = dropout_layer(y, rate=dropout)
+            y = tf.nn.dropout(y, rate=dropout)
             y = tf.add(x,y, name="add")
     print("DEBUG: {} {}".format(name, y.shape.as_list()))
     print("DEBUG: L2 in factorized res module {}".format(l2))
@@ -178,7 +178,7 @@ def erfnetB(X, Y, n_classes, alpha=0.001, dropout=0.3, l2=None, is_training=Fals
     #       and pass dropout, is_training, etc to it.
     # TODO: Add weight decay.
     with tf.name_scope("preprocess") as scope:
-        x = tf.div(X, 255., name="rescaled_inputs")
+        x = tf.math.divide(X, 255., name="rescaled_inputs")
 
     x = downsample(x, n_filters=16, is_training=is_training, l2=l2, name="d1")
 
